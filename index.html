@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+  <title>kau.</title>
+  <meta name="description" content="買いたいもの・お店・価格をかんたんに管理できる買い物リスト">
+  <meta name="theme-color" content="#F6F6F3" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="kau.">
+  <meta name="format-detection" content="telephone=no">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon-192.png" type="image/png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+  <div id="app" class="app" data-tab="list">
+    <main class="screens">
+      <section class="screen is-active" data-screen="list" aria-label="買い物リスト"></section>
+      <section class="screen" data-screen="history" aria-label="購入履歴"></section>
+      <section class="screen" data-screen="manage" aria-label="管理"></section>
+    </main>
+
+    <button class="fab" type="button" data-action="add-item" aria-label="商品を追加"></button>
+
+    <nav class="tabbar" aria-label="メインメニュー">
+      <button class="tabbar__item is-active" type="button" data-tab="list">
+        <span class="tabbar__icon" data-icon="list"></span>
+        <span class="tabbar__label">リスト</span>
+      </button>
+      <button class="tabbar__item" type="button" data-tab="history">
+        <span class="tabbar__icon" data-icon="clock"></span>
+        <span class="tabbar__label">履歴</span>
+      </button>
+      <button class="tabbar__item" type="button" data-tab="manage">
+        <span class="tabbar__icon" data-icon="sliders"></span>
+        <span class="tabbar__label">管理</span>
+      </button>
+    </nav>
+
+    <div id="pages" class="pages"></div>
+    <div id="sheets" class="sheets"></div>
+    <div id="toasts" class="toasts" aria-live="polite"></div>
+  </div>
+
+  <noscript>このアプリを使うには JavaScript を有効にしてください。</noscript>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
