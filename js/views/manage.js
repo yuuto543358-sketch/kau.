@@ -6,7 +6,7 @@ import { esc, yenHTML, matches, shortDate, longDate } from '../utils.js';
 import { openSheet, pushPage, confirmDialog, toast } from '../ui.js';
 import { loadSample } from '../actions.js';
 
-export const APP_VERSION = '1.0.0';
+export const APP_VERSION = '1.1.0';
 
 let screen;
 let content;

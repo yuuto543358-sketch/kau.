@@ -2584,3 +2584,314 @@ button.row:active,
 .sheet-danger {
   margin-top: 12px;
 }
+
+/* ------------------------------------------------------------- 入力シート（ステップ式） */
+
+.sheet--entry .sheet__body {
+  padding-top: 4px;
+}
+
+.step {
+  background: var(--bg-elev);
+  border-radius: 18px;
+  box-shadow: var(--shadow-card);
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+
+.step:not(.is-open) > .step__body,
+.step.is-open > .step__summary {
+  display: none;
+}
+
+.step.is-open > .step__body {
+  animation: fadeIn 0.22s ease;
+}
+
+.step__summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 64px;
+  padding: 0 16px;
+  text-align: left;
+  transition: background-color 0.15s ease;
+}
+
+.step__summary:active {
+  background: var(--fill-2);
+}
+
+.step__num {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 13px;
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  font-family: var(--font-num);
+  font-size: 14px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.step.is-done .step__summary .step__num {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.step__label {
+  flex: none;
+  width: 44px;
+  font-size: 15px;
+  color: var(--text-2);
+}
+
+.step__value {
+  flex: 1;
+  min-width: 0;
+  font-size: 19px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.step__value.is-empty {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-3);
+}
+
+.step__change {
+  flex: none;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--accent-text);
+}
+
+.step__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 16px 10px;
+}
+
+.step__title {
+  flex: 1;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.step__opt {
+  flex: none;
+  font-size: 13px;
+  color: var(--text-3);
+}
+
+.big-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 56px;
+  margin: 0 12px 12px;
+  padding: 0 8px 0 14px;
+  border-radius: 14px;
+  background: var(--fill-2);
+  box-shadow: inset 0 0 0 1.5px transparent;
+  transition: box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+.big-field:focus-within {
+  background: var(--bg-elev);
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+.big-field > .icon {
+  color: var(--text-3);
+}
+
+.big-field__input {
+  flex: 1;
+  min-width: 0;
+  height: 54px;
+  border: 0;
+  outline: none;
+  background: transparent;
+  font-size: 19px;
+  font-weight: 600;
+  padding: 0;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.big-field__input::placeholder {
+  color: var(--text-3);
+  font-weight: 500;
+}
+
+.big-field.has-value .field__clear {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.big-field--memo {
+  margin: 12px;
+}
+
+.big-field--memo .big-field__input {
+  font-size: 17px;
+  font-weight: 500;
+}
+
+.sheet--entry .suggest {
+  padding-bottom: 14px;
+}
+
+.sheet--entry .suggest__caption {
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.sheet--entry .suggest__chips--wrap {
+  padding: 0 12px;
+}
+
+.sheet--entry .s-chip {
+  height: 44px;
+  padding: 0 16px;
+  border-radius: 22px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.s-chip__tag {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent-text);
+}
+
+.s-chip--more {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--sep);
+  color: var(--accent-text);
+}
+
+/* 価格と個数を1行に */
+.price-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px;
+}
+
+.sheet--entry .price-field {
+  flex: 1;
+  min-width: 0;
+  height: 64px;
+  padding: 0 14px;
+  border-radius: 14px;
+  background: var(--fill-2);
+  box-shadow: inset 0 0 0 1.5px transparent;
+  transition: box-shadow 0.15s ease, background-color 0.15s ease;
+  cursor: text;
+}
+
+.sheet--entry .price-field:focus-within {
+  background: var(--bg-elev);
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+.sheet--entry .price-field__input {
+  height: 62px;
+  font-size: 32px;
+}
+
+.qty {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.qty__label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+
+.sheet--entry .price-hint {
+  padding: 10px 16px 16px;
+}
+
+.add-memo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 48px;
+  padding: 0 6px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--accent-text);
+}
+
+.add-memo .icon {
+  width: 19px;
+  height: 19px;
+  stroke-width: 2.3;
+}
+
+.add-memo span {
+  font-weight: 500;
+  color: var(--text-3);
+}
+
+.date-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 60px;
+  padding: 0 16px;
+}
+
+.date-row > .icon {
+  color: var(--text-3);
+}
+
+.date-row__label {
+  flex: none;
+  font-size: 16px;
+  color: var(--text-2);
+}
+
+.date-row__input {
+  flex: 1;
+  min-width: 0;
+  height: 52px;
+  border: 0;
+  outline: none;
+  background: transparent;
+  font-size: 18px;
+  font-weight: 600;
+  text-align: right;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.btn__sub {
+  margin-left: 8px;
+  padding-left: 8px;
+  border-left: 1px solid currentColor;
+  font-family: var(--font-num);
+  font-variant-numeric: tabular-nums;
+  opacity: 0.85;
+}
+
+/* キーボード表示中は、下のボタンを隠して入力欄を広く見せる（右上の「追加」で登録できる） */
+.keyboard-open .sheet--entry .sheet__footer {
+  display: none;
+}

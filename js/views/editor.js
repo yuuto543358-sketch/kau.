@@ -23,7 +23,6 @@ export function openItemEditor(preset = {}) {
     priceSource: 'empty',
     qty: 1,
     memo: '',
-    autofocus: !product,
   });
 }
 
@@ -55,7 +54,6 @@ export function openPurchaseCreate(preset = {}) {
     priceSource: 'empty',
     qty: 1,
     date: Date.now(),
-    autofocus: !product,
   });
 }
 
@@ -78,11 +76,16 @@ export function openPurchaseEdit(purchaseId) {
 
 /* ------------------------------------------------------------------ 本体 */
 
+// 入力は「① 商品 → ② お店 → ③ 価格」の順に1つずつ案内する。
+// 選び終わった項目は1行にたたまれ、タップするともう一度ひらく。
 function openEntryEditor(init) {
-  const st = { ...init };
+  const st = { ...init, showAll: false };
   const isItem = st.mode.startsWith('item');
   const isAdd = st.mode.endsWith('add');
   const excludeId = st.mode === 'purchase-edit' ? st.id : null;
+  // 最初にひらく項目（追加なら商品、編集ならすべてたたむ）
+  st.open = isAdd ? (st.name ? (st.storeName ? null : 'store') : 'name') : null;
+  st.memoOpen = Boolean(st.memo);
 
   const title = {
     'item-add': '商品を追加',
@@ -90,66 +93,85 @@ function openEntryEditor(init) {
     'purchase-add': '購入を記録',
     'purchase-edit': '購入履歴を編集',
   }[st.mode];
+  const past = st.mode.startsWith('purchase');
+  const q = {
+    name: past ? '何を買いましたか？' : '何を買いますか？',
+    store: past ? 'どこで買いましたか？' : 'どこで買いますか？',
+    price: past ? 'いくらでしたか？' : 'いくらですか？',
+  };
+  const headerLabel = { 'item-add': '追加', 'item-edit': '保存', 'purchase-add': '記録', 'purchase-edit': '保存' }[st.mode];
 
-  const primaryLabel = { 'item-add': '追加', 'item-edit': '保存', 'purchase-add': '記録', 'purchase-edit': '保存' }[st.mode];
+  const step = (key, num, label, placeholder, iconName, maxlength) => `
+    <section class="step" data-step="${key}">
+      <button type="button" class="step__summary" data-open="${key}">
+        <span class="step__num">${num}</span>
+        <span class="step__label">${label}</span>
+        <span class="step__value" data-role="${key}-value"></span>
+        <span class="step__change">変更</span>
+      </button>
+      <div class="step__body">
+        <div class="step__head">
+          <span class="step__num">${num}</span>
+          <span class="step__title">${q[key]}</span>
+          ${key === 'store' ? '<span class="step__opt">なしでもOK</span>' : ''}
+        </div>
+        <div class="big-field" data-field="${key}">
+          ${icon(iconName)}
+          <input class="big-field__input" data-input="${key}" type="text" placeholder="${placeholder}" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="next" maxlength="${maxlength}" aria-label="${label}">
+          <button type="button" class="field__clear" data-clear="${key}" aria-label="消す">${icon('x')}</button>
+        </div>
+        <div class="suggest" data-suggest="${key}"></div>
+      </div>
+    </section>`;
 
   const body = `
     ${st.mode === 'item-edit' && st.checked ? `<div class="notice notice--muted">${icon('info')}<span>購入済みの商品です。変更は購入履歴にも反映されます。</span></div>` : ''}
-    ${st.mode === 'purchase-edit' && st.linked ? `<div class="notice notice--muted">${icon('info')}<span>買い物リストの購入済み商品と連動しています。変更はリストにも反映されます。</span></div>` : ''}
-    <div class="form-label">商品名</div>
-    <div class="form-group">
-      <div class="field" data-field="name">
-        ${icon('box')}
-        <input class="field__input" data-input="name" type="text" placeholder="例：牛乳" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="next" maxlength="80" aria-label="商品名">
-        <button type="button" class="field__clear" data-clear="name" aria-label="商品名を消す">${icon('x')}</button>
-      </div>
-      <div class="suggest" data-suggest="name"></div>
-    </div>
+    ${st.mode === 'purchase-edit' && st.linked ? `<div class="notice notice--muted">${icon('info')}<span>リストの購入済み商品と連動しています。変更はリストにも反映されます。</span></div>` : ''}
 
-    <div class="form-label">購入場所</div>
-    <div class="form-group">
-      <div class="field" data-field="store">
-        ${icon('store')}
-        <input class="field__input" data-input="store" type="text" placeholder="例：スーパーA" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="next" maxlength="60" aria-label="購入場所">
-        <button type="button" class="field__clear" data-clear="store" aria-label="購入場所を消す">${icon('x')}</button>
-      </div>
-      <div class="suggest" data-suggest="store"></div>
-    </div>
+    ${step('name', 1, '商品', '商品名を入力', 'box', 80)}
+    ${step('store', 2, 'お店', 'お店の名前を入力', 'store', 60)}
 
-    <div class="form-label">価格<span class="form-label__opt">1個あたり</span></div>
-    <div class="form-group">
-      <div class="price-field" data-role="price-field">
-        <span class="price-field__sym">¥</span>
-        <input class="price-field__input" data-input="price" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="0" autocomplete="off" enterkeyhint="${isItem ? 'next' : 'done'}" aria-label="価格">
-      </div>
-      <div class="price-hint" data-role="price-hint"></div>
-      <div class="field">
-        ${icon('copy')}
-        <span class="field__row-label">個数</span>
-        <div class="stepper">
-          <button type="button" class="stepper__btn" data-step="-1" aria-label="1つ減らす">${icon('minus')}</button>
-          <span class="stepper__value" data-role="qty">1</span>
-          <button type="button" class="stepper__btn" data-step="1" aria-label="1つ増やす">${icon('plus')}</button>
+    <section class="step is-open step--price">
+      <div class="step__body">
+        <div class="step__head">
+          <span class="step__num">3</span>
+          <span class="step__title">${q.price}</span>
+          <span class="step__opt">1個あたり</span>
         </div>
+        <div class="price-row">
+          <label class="price-field" data-role="price-field">
+            <span class="price-field__sym">¥</span>
+            <input class="price-field__input" data-input="price" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="0" autocomplete="off" enterkeyhint="done" aria-label="価格">
+          </label>
+          <div class="qty">
+            <span class="qty__label">個数</span>
+            <div class="stepper">
+              <button type="button" class="stepper__btn" data-step="-1" aria-label="1つ減らす">${icon('minus')}</button>
+              <span class="stepper__value" data-role="qty">1</span>
+              <button type="button" class="stepper__btn" data-step="1" aria-label="1つ増やす">${icon('plus')}</button>
+            </div>
+          </div>
+        </div>
+        <div class="price-hint" data-role="price-hint"></div>
       </div>
-    </div>
+    </section>
 
     ${isItem ? `
-    <div class="form-label">メモ<span class="form-label__opt">任意</span></div>
-    <div class="form-group">
-      <div class="field" data-field="memo">
+    <button type="button" class="add-memo" data-action="open-memo">${icon('plus')}メモを追加<span>（任意）</span></button>
+    <section class="step is-open step--memo" data-role="memo-step">
+      <div class="big-field big-field--memo" data-field="memo">
         ${icon('note')}
-        <input class="field__input" data-input="memo" type="text" placeholder="例：6枚切り、特売なら2つ" autocomplete="off" enterkeyhint="done" maxlength="200" aria-label="メモ">
+        <input class="big-field__input" data-input="memo" type="text" placeholder="メモ（例：6枚切り）" autocomplete="off" enterkeyhint="done" maxlength="200" aria-label="メモ">
         <button type="button" class="field__clear" data-clear="memo" aria-label="メモを消す">${icon('x')}</button>
       </div>
-    </div>` : `
-    <div class="form-label">購入日</div>
-    <div class="form-group">
-      <div class="field">
+    </section>` : `
+    <section class="step is-open">
+      <label class="date-row">
         ${icon('calendar')}
-        <input class="field__input field__input--date" data-input="date" type="date" aria-label="購入日">
-      </div>
-    </div>`}
+        <span class="date-row__label">購入日</span>
+        <input class="date-row__input" data-input="date" type="date" aria-label="購入日">
+      </label>
+    </section>`}
 
     ${st.mode === 'purchase-edit' ? `<button type="button" class="btn btn--tinted btn--block" data-action="product-history">${icon('clock')}この商品の履歴と価格を見る</button>` : ''}
     ${!isAdd ? `<div class="sheet-danger"><button type="button" class="btn btn--danger btn--block" data-action="delete">${icon('trash')}${isItem ? 'リストから削除' : 'この履歴を削除'}</button></div>` : ''}
@@ -157,17 +179,17 @@ function openEntryEditor(init) {
 
   const footer = `
     <div data-role="dup"></div>
-    <div class="footer-total" data-role="total"></div>
     <div class="sheet__footer-row">
       ${st.mode === 'item-add' ? '<button type="button" class="btn btn--secondary" data-action="submit-continue">続けて追加</button>' : ''}
-      <button type="button" class="btn btn--primary" data-action="submit">${st.mode === 'item-add' ? 'リストに追加' : primaryLabel === '記録' ? '履歴に記録' : '保存'}</button>
+      <button type="button" class="btn btn--primary" data-action="submit" data-role="submit-label"></button>
     </div>`;
 
   const sheet = openSheet({
     title,
     body,
     footer,
-    right: `<button type="button" class="btn-text btn-text--strong" data-action="submit">${primaryLabel}</button>`,
+    className: 'sheet--entry',
+    right: `<button type="button" class="btn-text btn-text--strong" data-action="submit">${headerLabel}</button>`,
     onMount: (el) => mount(el),
   });
 
@@ -186,39 +208,76 @@ function openEntryEditor(init) {
     if (inputs.memo) inputs.memo.value = st.memo || '';
     if (inputs.date) inputs.date.value = toDateInput(st.date);
 
-    /* ---------- 候補チップ ---------- */
+    /* ---------- 項目のひらく・たたむ ---------- */
+
+    function renderSteps() {
+      for (const key of ['name', 'store']) {
+        const sec = $(`[data-step="${key}"]`);
+        const value = (key === 'name' ? st.name : st.storeName).trim();
+        sec.classList.toggle('is-open', st.open === key);
+        sec.classList.toggle('is-done', Boolean(value));
+        const v = $(`[data-role="${key}-value"]`);
+        v.textContent = value || (key === 'name' ? 'まだ選んでいません' : '指定なし');
+        v.classList.toggle('is-empty', !value);
+        sec.querySelector('.step__change').textContent = value ? '変更' : '選ぶ';
+      }
+      const memoStep = $('[data-role="memo-step"]');
+      if (memoStep) {
+        memoStep.hidden = !st.memoOpen;
+        $('[data-action="open-memo"]').hidden = st.memoOpen;
+      }
+    }
+
+    function openStep(key, { focus = false } = {}) {
+      st.open = key;
+      renderSteps();
+      if (key) {
+        renderNameSuggest();
+        renderStoreSuggest();
+        const sec = $(`[data-step="${key}"]`);
+        if (focus) inputs[key].focus({ preventScroll: true });
+        requestAnimationFrame(() => sec.scrollIntoView({ block: 'nearest', behavior: 'smooth' }));
+      }
+    }
+
+    /* ---------- 候補ボタン ---------- */
 
     function renderNameSuggest() {
       const box = $('[data-suggest="name"]');
-      const q = st.name.trim();
-      const list = store.suggestProducts(q, q ? 20 : 14);
-      const selKey = nameKey(q);
-      if (!list.length || (list.length === 1 && list[0].key === selKey)) {
-        box.innerHTML = '';
+      const qv = st.name.trim();
+      const limit = qv ? 24 : st.showAll ? 200 : 12;
+      const list = store.suggestProducts(qv, limit + 1);
+      const more = !qv && list.length > limit;
+      const shown = list.slice(0, limit);
+      const selKey = nameKey(qv);
+      if (!shown.length || (shown.length === 1 && shown[0].key === selKey)) {
+        box.innerHTML = qv ? `<div class="suggest__caption">「${esc(qv)}」は新しい商品として追加されます</div>` : '';
         return;
       }
+      const onList = new Set(store.state().items.filter((i) => !i.checked).map((i) => i.productId));
       box.innerHTML = `
-        <div class="suggest__caption">${q ? '候補' : 'よく買うもの'}</div>
-        <div class="suggest__chips">
-          ${list.map((p) => `<button type="button" class="s-chip ${p.key === selKey ? 'is-selected' : ''}" data-pick-name="${esc(p.id)}"><span>${esc(p.name)}</span></button>`).join('')}
+        <div class="suggest__caption">${qv ? '候補（タップで選べます）' : 'よく買うもの（タップで選べます）'}</div>
+        <div class="suggest__chips suggest__chips--wrap">
+          ${shown.map((p) => `<button type="button" class="s-chip ${p.key === selKey ? 'is-selected' : ''}" data-pick-name="${esc(p.id)}"><span>${esc(p.name)}</span>${isItem && onList.has(p.id) ? '<span class="s-chip__tag">リスト済</span>' : ''}</button>`).join('')}
+          ${more ? `<button type="button" class="s-chip s-chip--more" data-action="show-all">すべて表示</button>` : ''}
         </div>`;
     }
 
     function renderStoreSuggest() {
       const box = $('[data-suggest="store"]');
-      const q = st.storeName.trim();
-      const exact = store.findStoreByName(q);
+      const qv = st.storeName.trim();
+      const exact = store.findStoreByName(qv);
       const product = store.findProductByName(st.name);
-      const filterQ = q && !exact ? q : '';
-      const list = store.suggestStores(filterQ, product ? product.id : null);
+      const filterQ = qv && !exact ? qv : '';
+      const list = store.suggestStores(filterQ, product ? product.id : null, 40);
       if (!list.length) {
-        box.innerHTML = '';
+        box.innerHTML = qv && !exact ? `<div class="suggest__caption">「${esc(qv)}」は新しいお店として登録されます</div>` : '';
         return;
       }
       const priced = list.some((x) => x.last);
       box.innerHTML = `
-        <div class="suggest__caption">${priced ? '前回の価格つき' : filterQ ? '候補' : '履歴から選ぶ'}</div>
-        <div class="suggest__chips">
+        <div class="suggest__caption">${priced ? '前回の価格つき（タップで選べます）' : 'タップで選べます'}</div>
+        <div class="suggest__chips suggest__chips--wrap">
           ${list.map(({ store: s, last }) => {
             const lp = last && excludeId ? store.lastPrice(product.id, s.id, excludeId) : last;
             return `<button type="button" class="s-chip ${exact && exact.id === s.id ? 'is-selected' : ''}" data-pick-store="${esc(s.id)}">
@@ -258,19 +317,19 @@ function openEntryEditor(init) {
       const where = s ? s.name : '店舗未設定';
       let html = '';
       if (last && st.priceSource === 'auto') {
-        html = `<span class="badge">${icon('sparkle')}自動入力</span><span>${esc(where)}で${shortDate(last.date)}に買ったときの価格</span>`;
+        html = `<span class="badge">${icon('sparkle')}自動入力</span><span>${esc(where)}の前回価格（${shortDate(last.date)}）</span>`;
       } else if (last && st.priceSource === 'manual' && parsePrice(st.price) !== last.price) {
         html = `<span>前回 ${yen(last.price)}（${shortDate(last.date)}）</span><button type="button" class="price-hint__apply" data-action="apply-last">${icon('undo')}前回の価格にする</button>`;
       } else if (last) {
-        html = `<span>${esc(where)}の前回価格（${shortDate(last.date)}）と同じです</span>`;
+        html = `<span>前回（${shortDate(last.date)}）と同じ価格です</span>`;
       } else if (product && (s || newStore)) {
-        html = `<span>${newStore ? '新しいお店です。' : 'このお店での購入履歴はまだありません。'}価格を入力してください</span>`;
+        html = `<span>${newStore ? '新しいお店です。' : 'このお店ではまだ買っていません。'}わかれば入力してください</span>`;
       } else if (product && !st.storeName.trim()) {
-        html = '<span>購入場所を選ぶと、そのお店の前回価格が入ります</span>';
+        html = '<span>お店を選ぶと、前回の価格が自動で入ります</span>';
       } else if (st.name.trim()) {
-        html = '<span>新しい商品です。価格がわかれば入力してください</span>';
+        html = '<span>わかれば入力してください（空欄でもOK）</span>';
       } else {
-        html = '<span>商品と購入場所を選ぶと、前回の価格が自動で入ります</span>';
+        html = '<span>商品とお店を選ぶと、前回の価格が自動で入ります</span>';
       }
 
       // より安いお店があれば知らせる
@@ -287,12 +346,10 @@ function openEntryEditor(init) {
 
     function updateTotal() {
       const price = parsePrice(st.price);
-      const total = $('[data-role="total"]');
-      if (price === null) {
-        total.innerHTML = `<span>${st.qty > 1 ? `${st.qty}個` : ''}</span><span class="price price--empty">価格未入力</span>`;
-      } else {
-        total.innerHTML = `<span>${st.qty > 1 ? `${yen(price)} × ${st.qty}個` : '合計'}</span><span class="price">${yen(price * st.qty)}</span>`;
-      }
+      const base = { 'item-add': 'リストに追加', 'item-edit': '保存', 'purchase-add': '履歴に記録', 'purchase-edit': '保存' }[st.mode];
+      $('[data-role="submit-label"]').innerHTML = price === null
+        ? base
+        : `${base}<span class="btn__sub">${yen(price * st.qty)}</span>`;
       $('[data-role="qty"]').textContent = st.qty;
       $('[data-step="-1"]').disabled = st.qty <= 1;
     }
@@ -319,6 +376,7 @@ function openEntryEditor(init) {
     }
 
     function refreshAll() {
+      renderSteps();
       renderNameSuggest();
       renderStoreSuggest();
       updatePrice();
@@ -331,10 +389,10 @@ function openEntryEditor(init) {
     inputs.name.addEventListener('input', () => {
       st.name = inputs.name.value;
       renderNameSuggest();
-      renderStoreSuggest();
       updatePrice();
       updateDup();
       updateClear();
+      renderSteps();
     });
 
     inputs.store.addEventListener('input', () => {
@@ -343,6 +401,7 @@ function openEntryEditor(init) {
       updatePrice();
       updateDup();
       updateClear();
+      renderSteps();
     });
 
     inputs.price.addEventListener('input', () => {
@@ -354,6 +413,8 @@ function openEntryEditor(init) {
     });
 
     inputs.price.addEventListener('focus', () => {
+      // 価格欄を触ったら商品・お店はたたんで見やすく
+      if (st.open && (st.open !== 'name' || st.name.trim())) { st.open = null; renderSteps(); }
       // 自動入力された価格はタップですぐ書き換えられるよう全選択
       if (inputs.price.value) setTimeout(() => inputs.price.setSelectionRange(0, inputs.price.value.length), 0);
     });
@@ -372,17 +433,19 @@ function openEntryEditor(init) {
       });
     }
 
-    // Enterキーで次の欄へ
-    const order = ['name', 'store', 'price', 'memo'].filter((k) => inputs[k]);
-    order.forEach((k, i) => {
-      inputs[k].addEventListener('keydown', (e) => {
-        if (e.key !== 'Enter' || e.isComposing || e.keyCode === 229) return;
-        e.preventDefault();
-        const next = order[i + 1];
-        if (next) inputs[next].focus();
-        else submit(false);
-      });
+    // Enterキーで次の項目へ
+    const onEnter = (input, fn) => input && input.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter' || e.isComposing || e.keyCode === 229) return;
+      e.preventDefault();
+      fn();
     });
+    onEnter(inputs.name, () => {
+      if (!st.name.trim()) return;
+      if (st.storeName.trim()) { openStep(null); inputs.price.focus({ preventScroll: true }); } else openStep('store', { focus: true });
+    });
+    onEnter(inputs.store, () => { openStep(null); inputs.price.focus({ preventScroll: true }); });
+    onEnter(inputs.price, () => inputs.price.blur());
+    onEnter(inputs.memo, () => inputs.memo.blur());
 
     el.addEventListener('click', (e) => {
       const nameChip = e.target.closest('[data-pick-name]');
@@ -392,6 +455,8 @@ function openEntryEditor(init) {
         st.name = p.name;
         inputs.name.value = p.name;
         inputs.name.blur();
+        // 次はお店（まだ決まっていなければ）
+        st.open = st.storeName.trim() ? null : 'store';
         refreshAll();
         return;
       }
@@ -399,11 +464,16 @@ function openEntryEditor(init) {
       if (storeChip) {
         const s = store.getStore(storeChip.dataset.pickStore);
         if (!s) return;
-        const same = store.findStoreByName(st.storeName)?.id === s.id;
-        st.storeName = same ? '' : s.name; // 選択中のチップをもう一度タップで解除
-        inputs.store.value = st.storeName;
+        st.storeName = s.name;
+        inputs.store.value = s.name;
         inputs.store.blur();
+        st.open = null;
         refreshAll();
+        return;
+      }
+      const opener = e.target.closest('[data-open]');
+      if (opener) {
+        openStep(opener.dataset.open);
         return;
       }
       const clear = e.target.closest('[data-clear]');
@@ -414,9 +484,9 @@ function openEntryEditor(init) {
         inputs[key].focus();
         return;
       }
-      const step = e.target.closest('[data-step]');
-      if (step) {
-        st.qty = Math.max(1, Math.min(999, st.qty + Number(step.dataset.step)));
+      const stepBtn = e.target.closest('[data-step]');
+      if (stepBtn) {
+        st.qty = Math.max(1, Math.min(999, st.qty + Number(stepBtn.dataset.step)));
         updateTotal();
         return;
       }
@@ -424,6 +494,13 @@ function openEntryEditor(init) {
       if (action === 'apply-last') {
         st.priceSource = 'auto';
         updatePrice();
+      } else if (action === 'show-all') {
+        st.showAll = true;
+        renderNameSuggest();
+      } else if (action === 'open-memo') {
+        st.memoOpen = true;
+        renderSteps();
+        inputs.memo.focus({ preventScroll: true });
       } else if (action === 'submit') {
         submit(false);
       } else if (action === 'submit-continue') {
@@ -441,13 +518,13 @@ function openEntryEditor(init) {
     function submit(keepOpen) {
       const name = st.name.trim();
       if (!name) {
-        const field = $('[data-field="name"]').closest('.form-group');
-        field.animate(
+        openStep('name');
+        const sec = $('[data-step="name"]');
+        sec.animate(
           [{ transform: 'translateX(0)' }, { transform: 'translateX(-8px)' }, { transform: 'translateX(8px)' }, { transform: 'translateX(-4px)' }, { transform: 'translateX(0)' }],
           { duration: 320, easing: 'ease-out' },
         );
-        inputs.name.focus();
-        toast('商品名を入力してください', { icon: 'info' });
+        toast('商品を選ぶか、入力してください', { icon: 'info' });
         return;
       }
       const payload = {
@@ -465,31 +542,22 @@ function openEntryEditor(init) {
         const pname = store.productName(res.item.productId);
         toast(res.merged ? `「${pname}」の個数を${res.item.qty}にしました` : `「${pname}」を追加しました`, { icon: 'check' });
         if (keepOpen) {
-          // 店舗はそのまま、ほかの欄をリセットして次の入力へ
-          st.name = '';
-          st.price = '';
-          st.priceSource = 'empty';
-          st.qty = 1;
-          st.memo = '';
+          // お店はそのまま、ほかの欄をリセットして次の商品へ
+          Object.assign(st, { name: '', price: '', priceSource: 'empty', qty: 1, memo: '', memoOpen: false, open: 'name', showAll: false });
           inputs.name.value = '';
           inputs.price.value = '';
           if (inputs.memo) inputs.memo.value = '';
           refreshAll();
-          inputs.name.focus({ preventScroll: true });
           el.querySelector('.sheet__body').scrollTo({ top: 0, behavior: 'smooth' });
           return;
         }
       } else if (st.mode === 'item-edit') {
-        if (!store.updateItem(st.id, payload)) {
-          toast('この商品は見つかりませんでした');
-        }
+        if (!store.updateItem(st.id, payload)) toast('この商品は見つかりませんでした');
       } else if (st.mode === 'purchase-add') {
         store.addPurchase(payload);
         toast(`「${name}」を購入履歴に記録しました`, { icon: 'check' });
       } else if (st.mode === 'purchase-edit') {
-        if (!store.updatePurchase(st.id, payload)) {
-          toast('この履歴は見つかりませんでした');
-        }
+        if (!store.updatePurchase(st.id, payload)) toast('この履歴は見つかりませんでした');
       }
       sheet.close();
     }
@@ -519,8 +587,8 @@ function openEntryEditor(init) {
     }
 
     refreshAll();
-    updateTotal();
-    if (st.autofocus) inputs.name.focus({ preventScroll: true });
+    // 候補がまったくないとき（はじめて使うとき）だけ、すぐキーボードを出す
+    if (st.open === 'name' && !store.state().products.length) inputs.name.focus({ preventScroll: true });
   }
 
   return sheet;

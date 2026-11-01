@@ -1,7 +1,7 @@
 // kau. — Service Worker（オフラインでも開けるようにする）
 // ファイルを更新したら VERSION を変更すること。
 
-const VERSION = 'kau-v1.0.0';
+const VERSION = 'kau-v1.1.0';
 const ASSETS = [
   './',
   './index.html',

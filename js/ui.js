@@ -47,7 +47,7 @@ export function watchViewport() {
  */
 export function openSheet(opt) {
   const el = document.createElement('div');
-  el.className = `sheet sheet--${opt.size || 'full'}`;
+  el.className = `sheet sheet--${opt.size || 'full'} ${opt.className || ''}`;
   el.setAttribute('role', 'dialog');
   el.setAttribute('aria-modal', 'true');
   el.setAttribute('aria-label', opt.title || '');
